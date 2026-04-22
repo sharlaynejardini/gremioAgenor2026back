@@ -50,6 +50,53 @@ async function buscarAlunoPorId(id) {
   return result.rows[0] ? mapearEleitor(result.rows[0]) : null;
 }
 
+async function cadastrarAluno({ nome, turmaId, jaVotou = false }) {
+  const result = await pool.query(`
+    INSERT INTO eleitores (nome, turma_id, ja_votou)
+    VALUES ($1, $2, $3)
+    RETURNING id, nome, turma_id, ja_votou, created_at
+  `, [nome, turmaId, jaVotou]);
+
+  return buscarAlunoPorId(result.rows[0].id);
+}
+
+async function atualizarAluno(id, { nome, turmaId, jaVotou }) {
+  const campos = [];
+  const valores = [id];
+
+  if (nome !== undefined) {
+    valores.push(nome);
+    campos.push(`nome = $${valores.length}`);
+  }
+
+  if (turmaId !== undefined) {
+    valores.push(turmaId);
+    campos.push(`turma_id = $${valores.length}`);
+  }
+
+  if (jaVotou !== undefined) {
+    valores.push(jaVotou);
+    campos.push(`ja_votou = $${valores.length}`);
+  }
+
+  if (!campos.length) {
+    return buscarAlunoPorId(id);
+  }
+
+  const result = await pool.query(`
+    UPDATE eleitores
+    SET ${campos.join(', ')}
+    WHERE id = $1
+    RETURNING id
+  `, valores);
+
+  if (!result.rows[0]) {
+    return null;
+  }
+
+  return buscarAlunoPorId(id);
+}
+
 async function registrarVoto(eleitorId, chapaNumero) {
   const client = await pool.connect();
 
@@ -114,5 +161,7 @@ module.exports = {
   listarAlunos,
   listarAlunosPorAno,
   buscarAlunoPorId,
+  cadastrarAluno,
+  atualizarAluno,
   registrarVoto
 };

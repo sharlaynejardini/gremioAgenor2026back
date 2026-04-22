@@ -2,8 +2,10 @@ const { pool } = require('../config/db');
 
 function montarChapa(row) {
   return {
+    id: row.id,
     nome: row.nome,
     numero: row.numero,
+    descricao: row.descricao,
     candidatos: row.candidatos || []
   };
 }
@@ -11,8 +13,10 @@ function montarChapa(row) {
 async function listarTodasChapas() {
   const result = await pool.query(`
     SELECT
+      c.id,
       c.nome,
       c.numero,
+      c.descricao,
       COALESCE(
         json_agg(
           json_build_object(
@@ -27,7 +31,7 @@ async function listarTodasChapas() {
     FROM chapas c
     LEFT JOIN candidatos ca ON ca.chapa_id = c.id
     LEFT JOIN turmas t ON t.id = ca.turma_id
-    GROUP BY c.id, c.nome, c.numero
+    GROUP BY c.id, c.nome, c.numero, c.descricao
     ORDER BY c.numero
   `);
 
@@ -82,7 +86,60 @@ async function buscarChapaPorNumero(numero) {
   return resposta;
 }
 
+async function atualizarChapa(id, { nome, numero, descricao }) {
+  const campos = [];
+  const valores = [id];
+
+  if (nome !== undefined) {
+    valores.push(nome);
+    campos.push(`nome = $${valores.length}`);
+  }
+
+  if (numero !== undefined) {
+    valores.push(numero);
+    campos.push(`numero = $${valores.length}`);
+  }
+
+  if (descricao !== undefined) {
+    valores.push(descricao);
+    campos.push(`descricao = $${valores.length}`);
+  }
+
+  if (!campos.length) {
+    return buscarChapaPorId(id);
+  }
+
+  const result = await pool.query(`
+    UPDATE chapas
+    SET ${campos.join(', ')}
+    WHERE id = $1
+    RETURNING numero
+  `, valores);
+
+  if (!result.rows[0]) {
+    return null;
+  }
+
+  return buscarChapaPorNumero(result.rows[0].numero);
+}
+
+async function buscarChapaPorId(id) {
+  const result = await pool.query(`
+    SELECT numero
+    FROM chapas
+    WHERE id = $1
+  `, [id]);
+
+  if (!result.rows[0]) {
+    return null;
+  }
+
+  return buscarChapaPorNumero(result.rows[0].numero);
+}
+
 module.exports = {
   listarTodasChapas,
-  buscarChapaPorNumero
+  buscarChapaPorNumero,
+  buscarChapaPorId,
+  atualizarChapa
 };

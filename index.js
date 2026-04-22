@@ -6,6 +6,7 @@ const votoController = require('./controllers/votoController');
 const alunoRoutes = require('./routes/alunoRoutes');
 const chapaRoutes = require('./routes/chapaRoutes');
 const votoRoutes = require('./routes/votoRoutes');
+const turmaRoutes = require('./routes/turmaRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,7 @@ app.get('/resultado', votoController.getResultados);
 app.use('/alunos', alunoRoutes);
 app.use('/chapas', chapaRoutes);
 app.use('/votos', votoRoutes);
+app.use('/turmas', turmaRoutes);
 
 if (require.main === module) {
   app.listen(PORT, () => {
