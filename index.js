@@ -8,7 +8,7 @@ const chapaRoutes = require('./routes/chapaRoutes');
 const votoRoutes = require('./routes/votoRoutes');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -33,6 +33,10 @@ app.use('/alunos', alunoRoutes);
 app.use('/chapas', chapaRoutes);
 app.use('/votos', votoRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
